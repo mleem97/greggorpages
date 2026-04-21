@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #61f4d8;
+  --color-primary-container: #08c1a6;
+  --color-on-primary: #00594c;
+  
+  --color-secondary: #1cede1;
+  --color-on-secondary: #00534e;
+  
+  --color-tertiary: #64d0ff;
+  --color-on-tertiary: #00445a;
+  
+  --color-background: #001110;
+  --color-on-background: #c0fcf6;
+  
+  --color-surface: #001110;
+  --color-on-surface: #c0fcf6;
+  --color-surface-variant: #002b29;
+  --color-on-surface-variant: #7cb6b0;
+  --color-surface-container: #001e1c;
+  --color-surface-container-high: #002422;
+  
+  --color-outline: #457f7a;
+  --color-outline-variant: #0f514c;
+  
+  --color-error: #ff716c;
+  --color-error-dim: #d7383b;
+  --color-on-error: #490006;
+
+  --font-headline: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+:root {
+  --background: var(--color-background);
+  --foreground: var(--color-on-background);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-body);
+  position: relative;
+  /* Set body to dark mode default as requested */
+  color-scheme: dark;
+}
+
+/* Subtle Noise Texture from the Webvorlage */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBo_f23WK3YkU7kOJXXGo9wWnI2T0P4H9YQ00HGnsrztdAl6nVVQuFXw4nQ1Q-xbQGHP5T7VD1hzrlPmvHQdAc7WuLl7fPGSYJKNLLx9uy_IkPrZfuDqjro6k9rbnV2by9RzBBxe1AGGExEXWzuwATQ4tLUKtU0qAG6gO46IZOVGca1O1jldF_PENt_aQzHclIWJPsFjuASbnTfLkM_1SDSK-aPrjEbqQnH3fHEpCKfKm11SWVMuPBZoWbq_GIm72yvlkkjMmWK3zCd');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-glow {
+  box-shadow: 0 0 80px -20px rgba(97, 244, 216, 0.15);
+}
+
+.glass-card {
+  background: rgba(0, 30, 28, 0.8);
+  backdrop-filter: blur(12px);
+}
