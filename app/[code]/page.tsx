@@ -1,8 +1,8 @@
 "use client";
 
-import { AlertOctagon, RefreshCcw, Home, ArrowRight } from "lucide-react";
+import { AlertOctagon, RefreshCcw, Home } from "lucide-react";
 import Link from "next/link";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 interface ErrorInfo {
@@ -13,12 +13,12 @@ interface ErrorInfo {
 const ERROR_MAP: Record<string, ErrorInfo> = {
   "400": { title: "Bad Request", message: "The server could not understand the request due to invalid syntax." },
   "401": { title: "Unauthorized", message: "Authentication is required and has failed or has not yet been provided." },
-  "403": { title: "Forbidden", message: "Access to the requested resource is strictly denied by the framework." },
-  "404": { title: "Not Found", message: "The requested resource could not be located in the current zone." },
+  "403": { title: "Forbidden", message: "Access to the requested resource is strictly denied." },
+  "404": { title: "Not Found", message: "The requested resource could not be located on this server." },
   "500": { title: "Internal Server Error", message: "The server encountered an unexpected condition that prevented it from fulfilling the request." },
-  "502": { title: "Bad Gateway", message: "The server, while acting as a gateway or proxy, received an invalid response." },
-  "503": { title: "Service Unavailable", message: "The server is not ready to handle the request. Common causes are a server that is down for maintenance or that is overloaded." },
-  "504": { title: "Gateway Timeout", message: "The server, while acting as a gateway or proxy, did not get a response in time." },
+  "502": { title: "Bad Gateway", message: "The server received an invalid response from the upstream server." },
+  "503": { title: "Service Unavailable", message: "The server is currently unable to handle the request." },
+  "504": { title: "Gateway Timeout", message: "The gateway timed out while waiting for a response." },
 };
 
 export default function ErrorPage({
@@ -27,9 +27,24 @@ export default function ErrorPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = use(params);
+  
+  // Environment variables / Branding defaults
+  // Note: In Next.js Client Components, NEXT_PUBLIC_ is required for browser access.
+  // For a truly dynamic container, we could also use an API endpoint to fetch config,
+  // but for simple error pages, we'll use fallbacks that can be themed via CSS.
+  const [brandName, setBrandName] = useState("System");
+  const [footerText, setFooterText] = useState("Infrastructure Response");
+
+  useEffect(() => {
+    // Attempt to read from window if injected or just keep defaults
+    if (typeof window !== "undefined") {
+      // Logic for dynamic configuration could go here
+    }
+  }, []);
+
   const info = ERROR_MAP[code] || {
-    title: "Unknown System Anomaly",
-    message: "An unexpected error occurred within the Luminescent ecosystem.",
+    title: "System Anomaly",
+    message: "An unexpected error occurred during processing.",
   };
 
   const containerVariants = {
@@ -64,7 +79,7 @@ export default function ErrorPage({
 
           <motion.div variants={itemVariants} className="flex items-center gap-2 mb-8">
             <span className="inline-block px-3 py-1 rounded-full bg-surface-container-highest text-primary text-[10px] font-bold tracking-[0.2em] uppercase border border-outline-variant/20">
-              System Incident {code}
+              {brandName} Incident {code}
             </span>
           </motion.div>
 
@@ -86,23 +101,23 @@ export default function ErrorPage({
               className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-xl text-lg shadow-[0_0_32px_-4px_rgba(97,244,216,0.2)] hover:scale-105 transition-transform duration-300"
             >
               <Home className="w-5 h-5" />
-              Return Core
+              Return Home
             </Link>
             <button 
               onClick={() => window.location.reload()} 
               className="flex items-center justify-center gap-2 px-8 py-4 border border-outline-variant/40 hover:border-primary text-on-surface font-headline font-bold rounded-xl text-lg transition-all duration-300 bg-surface/50 backdrop-blur-sm"
             >
               <RefreshCcw className="w-5 h-5" />
-              Re-Sync
+              Reload Page
             </button>
           </motion.div>
 
           <motion.div variants={itemVariants} className="mt-12 flex justify-between items-center text-[10px] uppercase tracking-widest text-on-surface-variant font-medium">
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
-              Fault Detected
+              Service Status: Disrupted
             </span>
-            <span>gregFramework Edge</span>
+            <span>{footerText}</span>
           </motion.div>
 
         </div>
