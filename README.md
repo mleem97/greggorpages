@@ -1,5 +1,7 @@
 # greggorpages - Universal Dynamic Error Pages
 
+[![Docker Build & Publish](https://github.com/mleem97/greggorpages/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/mleem97/greggorpages/actions/workflows/docker-publish.yml)
+
 A modern, high-performance, and animated error page service built with **Next.js 16**, **Framer Motion**, and **Tailwind CSS v4**. Designed to be used as a custom error page backend for reverse proxies like **Traefik**.
 
 ## Features

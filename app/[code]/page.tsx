@@ -57,7 +57,7 @@ export default function ErrorPage({
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } }
   };
 
   return (
@@ -71,14 +71,14 @@ export default function ErrorPage({
         animate="visible"
         className="relative z-10 w-full max-w-2xl"
       >
-        <div className="glass-card rounded-2xl p-8 md:p-12 border border-outline-variant/20 hover:border-primary/30 transition-all duration-500 overflow-hidden relative">
+        <div className="glass-card rounded-lg p-8 md:p-12 border border-outline-variant/20 hover:border-primary/30 transition-all duration-500 overflow-hidden relative">
           
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <AlertOctagon className="w-32 h-32 text-primary" />
           </div>
 
           <motion.div variants={itemVariants} className="flex items-center gap-2 mb-8">
-            <span className="inline-block px-3 py-1 rounded-full bg-surface-container-highest text-primary text-[10px] font-bold tracking-[0.2em] uppercase border border-outline-variant/20">
+            <span className="inline-block px-3 py-1 rounded-full bg-surface-container-highest text-primary text-[10px] font-mono font-bold tracking-[0.15em] uppercase border border-outline-variant/20">
               {brandName} Incident {code}
             </span>
           </motion.div>
@@ -96,23 +96,23 @@ export default function ErrorPage({
           </motion.div>
 
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-outline-variant/15">
-            <Link 
+            <Link
               href="/"
-              className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-xl text-lg shadow-[0_0_32px_-4px_rgba(97,244,216,0.2)] hover:scale-105 transition-transform duration-300"
+              className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline font-bold rounded-lg text-lg shadow-ambient-glow hover:shadow-console-glow hover:scale-105 transition-all duration-300"
             >
               <Home className="w-5 h-5" />
               Return Home
             </Link>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="flex items-center justify-center gap-2 px-8 py-4 border border-outline-variant/40 hover:border-primary text-on-surface font-headline font-bold rounded-xl text-lg transition-all duration-300 bg-surface/50 backdrop-blur-sm"
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center justify-center gap-2 px-8 py-4 border border-outline-variant/40 hover:border-primary text-on-surface font-headline font-bold rounded-lg text-lg transition-all duration-300 bg-surface/50 backdrop-blur-sm"
             >
               <RefreshCcw className="w-5 h-5" />
               Reload Page
             </button>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="mt-12 flex justify-between items-center text-[10px] uppercase tracking-widest text-on-surface-variant font-medium">
+          <motion.div variants={itemVariants} className="mt-12 flex justify-between items-center text-[11px] uppercase tracking-[0.15em] text-on-surface-variant font-mono font-medium">
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
               Service Status: Disrupted

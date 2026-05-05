@@ -1,23 +1,34 @@
-FROM node:20-alpine AS base
+# syntax=docker/dockerfile:1
 
-# Install dependencies only when needed
+# Base image with pnpm enabled via Corepack
+FROM node:20-alpine AS base
+RUN corepack enable pnpm
+
+# ---------------------------------------------------------
+# Dependencies stage
+# ---------------------------------------------------------
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
-# Rebuild the source code only when needed
+# ---------------------------------------------------------
+# Builder stage
+# ---------------------------------------------------------
 FROM base AS builder
 WORKDIR /app
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm run build
+RUN pnpm build
 
-# Production image, copy all the files and run next
+# ---------------------------------------------------------
+# Runner stage (production)
+# ---------------------------------------------------------
 FROM base AS runner
 WORKDIR /app
 
@@ -25,6 +36,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+LABEL org.opencontainers.image.source="https://github.com/mleem97/greggorpages"
 LABEL org.opencontainers.image.description="Greggorpages Next.js application"
 LABEL org.opencontainers.image.licenses=MIT
 
@@ -33,7 +45,7 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
+# Set correct permissions for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
