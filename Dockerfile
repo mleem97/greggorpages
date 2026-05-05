@@ -25,6 +25,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+LABEL org.opencontainers.image.description="Greggorpages Next.js application"
+LABEL org.opencontainers.image.licenses=MIT
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
