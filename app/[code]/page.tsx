@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import ErrorDisplay, { ErrorInfo } from "./error-display";
 
 const ERROR_MAP: Record<string, ErrorInfo> = {
@@ -21,7 +20,7 @@ export default async function ErrorPage({
 
   const info = ERROR_MAP[code];
   if (!info) {
-    redirect("/404");
+    return <ErrorDisplay code="404" info={ERROR_MAP["404"]} />;
   }
 
   return <ErrorDisplay code={code} info={info} />;
