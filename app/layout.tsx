@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-headline" });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+import { loadDesignConfig, generateDesignCSS, generateGoogleFontsUrl } from "@/lib/design";
 
 export const metadata: Metadata = {
   title: "gregFramework | System Response",
@@ -16,8 +12,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const config = loadDesignConfig();
+  const designCSS = generateDesignCSS(config);
+  const googleFontsUrl = generateGoogleFontsUrl(config);
+
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} dark`}>
+    <html lang="en" className="dark">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href={googleFontsUrl} rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{ __html: designCSS }} />
+      </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary antialiased">
         {children}
       </body>

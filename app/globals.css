@@ -70,20 +70,20 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.2;
+  opacity: var(--noise-opacity, 0.2);
   z-index: 0;
   pointer-events: none;
-  background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBo_f23WK3YkU7kOJXXGo9wWnI2T0P4H9YQ00HGnsrztdAl6nVVQuFXw4nQ1Q-xbQGHP5T7VD1hzrlPmvHQdAc7WuLl7fPGSYJKNLLx9uy_IkPrZfuDqjro6k9rbnV2by9RzBBxe1AGGExEXWzuwATQ4tLUKtU0qAG6gO46IZOVGca1O1jldF_PENt_aQzHclIWJPsFjuASbnTfLkM_1SDSK-aPrjEbqQnH3fHEpCKfKm11SWVMuPBZoWbq_GIm72yvlkkjMmWK3zCd');
+  background-image: var(--noise-image-url, none);
   background-size: cover;
   background-position: center;
 }
 
 .hero-glow {
-  box-shadow: 0 0 80px -20px rgba(138, 235, 255, 0.12);
+  box-shadow: var(--hero-glow, 0 0 80px -20px rgba(138, 235, 255, 0.12));
 }
 
 .glass-card {
-  background: rgba(18, 33, 49, 0.8);
+  background: var(--glass-card-bg, rgba(18, 33, 49, 0.8));
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(133, 147, 151, 0.08);
+  border: var(--glass-card-border, 1px solid rgba(133, 147, 151, 0.08));
 }
