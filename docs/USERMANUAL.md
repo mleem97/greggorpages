@@ -84,10 +84,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `API_KEY` | *(none)* | **Required.** Master API key for all `/api/*` endpoints. If not set, all API routes return `503 Disabled`. |
 | `APP_STATUS_URL` | *(none)* | URL to fetch the current app status from. Must return `public`, `maintenance`, `devmode`, or `testing`. |
 | `DEVMODE_PASSWORD` | *(none)* | Password required to unlock the app in `devmode`. |
 | `TESTING_PASSWORD` | *(none)* | Password required to unlock the app in `testing`. Falls back to `DEVMODE_PASSWORD` if unset. |
-| `GIT_PUSH_SECRET` | *(none)* | Secret token for authenticating `/api/git-push` webhook requests. |
+| `GIT_PUSH_SECRET` | *(none)* | Additional secret for authenticating `/api/git-push` webhook requests (checked after `API_KEY`). |
 | `WEBHOOK_URL` | *(none)* | Optional URL to forward deploy events to after processing. |
 
 > **Note:** These variables are server-side only and never exposed to the browser.

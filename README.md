@@ -59,10 +59,11 @@ npm run build
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `API_KEY` | **Yes** | Master API key. **All** `/api/*` endpoints are disabled without it. |
 | `APP_STATUS_URL` | No | External API returning `public`, `maintenance`, `devmode`, or `testing`. |
 | `DEVMODE_PASSWORD` | No | Password for `devmode` access. |
 | `TESTING_PASSWORD` | No | Password for `testing` access (falls back to `DEVMODE_PASSWORD`). |
-| `GIT_PUSH_SECRET` | No | Secret token for `/api/git-push` webhook authentication. |
+| `GIT_PUSH_SECRET` | No | Additional secret for `/api/git-push` webhook authentication. |
 | `WEBHOOK_URL` | No | Optional URL to forward deploy events to. |
 
 ### design.json
@@ -81,6 +82,8 @@ See the [User Manual](docs/USERMANUAL.md) for the full configuration reference.
 | `testing` | Shows login modal; password unlocks access | 200 (rewrite) |
 
 ## API Endpoints
+
+> **All API endpoints require the `API_KEY` to be set.** Pass it via header `X-API-Key` or query parameter `api_key`.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
