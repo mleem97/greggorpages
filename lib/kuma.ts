@@ -96,16 +96,17 @@ export async function setKumaMaintenance(config: {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
-    // Versuche Maintenance-Mode über Kuma Management API zu setzen
-    // Hinweis: Passe diese Endpunkte an deine Kuma-Version an.
-    const res = await fetch(`${config.baseUrl}/api/monitors/${config.monitorId}/pause`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal,
-    });
+    const res = await fetch(
+      `${config.baseUrl}/api/monitors/${config.monitorId}/pause`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      }
+    );
 
     clearTimeout(timeout);
     return res.ok;
@@ -127,14 +128,17 @@ export async function resolveKumaMaintenance(config: {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const res = await fetch(`${config.baseUrl}/api/monitors/${config.monitorId}/resume`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal,
-    });
+    const res = await fetch(
+      `${config.baseUrl}/api/monitors/${config.monitorId}/resume`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      }
+    );
 
     clearTimeout(timeout);
     return res.ok;

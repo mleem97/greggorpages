@@ -14,6 +14,8 @@ export interface KumaIntegrationConfig {
   showLink: boolean;
   apiKey?: string;
   monitorId?: string | number;
+  /** Map hostname → monitorId for multi-tenant proxy setups */
+  hostMonitors?: Record<string, string | number>;
 }
 
 export interface DesignConfig {
@@ -143,6 +145,7 @@ const DEFAULT_CONFIG: DesignConfig = {
       showLink: true,
       apiKey: "",
       monitorId: "",
+      hostMonitors: {},
     },
   },
 };
@@ -209,6 +212,37 @@ export function generateDesignCSS(config: DesignConfig): string {
   lines.push(`  --hero-glow: ${config.effects.heroGlow} !important;`);
 
   return `body {\n${lines.join("\n")}\n}`;
+}
+
+export function getMonitorIdForHost(
+  config: DesignConfig,
+  host: string
+): string | number | undefined {
+  const kuma = config.integrations.uptimeKuma;
+  if (!kuma.hostMonitors || Object.keys(kuma.hostMonitors).length === 0) {
+    return kuma.monitorId;
+  }
+
+  // Try exact match first, then wildcard match
+  const cleanHost = host.toLowerCase().replace(/^www\./, "");
+
+  if (kuma.hostMonitors[cleanHost]) {
+    return kuma.hostMonitors[cleanHost];
+  }
+
+  // Try wildcard domain matching (e.g. "*.example.com")
+  for (const [pattern, id] of Object.entries(kuma.hostMonitors)) {
+    const regex = new RegExp(
+      "^" + pattern.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$",
+      "i"
+    );
+    if (regex.test(cleanHost)) {
+      return id;
+    }
+  }
+
+  // Fallback to default monitorId
+  return kuma.monitorId;
 }
 
 export function generateGoogleFontsUrl(config: DesignConfig): string {

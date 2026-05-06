@@ -2,21 +2,21 @@
 
 [![Docker Build & Publish](https://github.com/mleem97/greggorpages/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/mleem97/greggorpages/actions/workflows/docker-publish.yml)
 
-A modern, high-performance, and animated error page service built with **Next.js 16**, **Framer Motion**, and **Tailwind CSS v4**. Designed to be used as a custom error page backend for reverse proxies like **Traefik**.
+A modern, high-performance, and animated error page service built with **Next.js 16**, **Framer Motion**, and **Tailwind CSS v4**. Designed to be used as a custom error page backend for reverse proxies like **Traefik**, **Nginx**, or **Caddy**.
 
 ## Features
 
-- 🌑 **Premium Dark Mode** by default.
-- ⚡ **Dynamic Routing**: Supports any HTTP status code via `/error/[code]`.
-- 🎨 **Modern Design**: Inspired by the Luminescent/gregFramework aesthetic with glassmorphism and glow effects.
-- 🎬 **Smooth Animations**: Powered by Framer Motion.
-- 🐳 **Docker Ready**: Highly optimized standalone multi-stage Dockerfile.
+- **Dynamic Error Pages**: Support for any HTTP status code via `/[code]` (e.g. `/404`, `/503`).
+- **App Status Gate**: External API-controlled modes: `public`, `maintenance`, `devmode`, `testing`.
+- **Maintenance Mode**: Returns HTTP 200 to uptime monitors while displaying a 503 page to humans.
+- **Uptime Kuma Integration**: Automatically syncs maintenance status and displays live service health.
+- **Multi-Tenant Proxy**: Host-based monitor mapping for serving multiple domains from one instance.
+- **Fully Themeable**: All colors, fonts, shadows, and text controlled via `design.json`.
+- **Docker Ready**: Optimized standalone multi-stage Dockerfile with GitHub Actions publishing.
 
-## Usage with Traefik
+## Quick Start
 
-To use `greggorpages` with Traefik, deploy the container and configure the `errors` middleware.
-
-### 1. Docker Compose Snippet
+### Docker Compose
 
 ```yaml
 services:
@@ -24,7 +24,9 @@ services:
     image: ghcr.io/mleem97/greggorpages:latest
     container_name: error-pages
     restart: unless-stopped
-    # Use environment variables for basic branding (TBD)
+    environment:
+      - APP_STATUS_URL=https://datacentermods.com/api/status
+      - DEVMODE_PASSWORD=changeme
     networks:
       - traefik-public
 
@@ -37,16 +39,51 @@ services:
       - "traefik.http.routers.my-app.middlewares=my-app-errors"
 ```
 
-### 2. How it works
-Traefik's `errors` middleware will catch any response with a status code in the specified range (e.g., 400-599) and redirect the user to the `error-pages` service. The `{status}` placeholder ensures the user sees the correct animated page for their specific error.
+### Local Development
 
-## Customization
+```bash
+# Install dependencies
+npm install
 
-The design follows a strict design-token system in `app/globals.css`. You can customize the look by overriding the Tailwind v4 theme variables.
+# Run dev server
+npm run dev
 
-### Environment Variables (Planned)
-- `NEXT_PUBLIC_BRAND_NAME`: Change the title prefix (Default: "System").
-- `NEXT_PUBLIC_FOOTER_TEXT`: Customize the footer branding.
+# Build for production
+npm run build
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `APP_STATUS_URL` | No | External API returning `public`, `maintenance`, `devmode`, or `testing`. |
+| `DEVMODE_PASSWORD` | No | Password for `devmode` access. |
+| `TESTING_PASSWORD` | No | Password for `testing` access (falls back to `DEVMODE_PASSWORD`). |
+
+### design.json
+
+All visual design tokens are controlled via `design.json` in the project root. If the file is missing, sensible defaults are used.
+
+See the [User Manual](docs/USERMANUAL.md) for the full configuration reference.
+
+## App Status Modes
+
+| Mode | Behavior | Monitor HTTP |
+|------|----------|--------------|
+| `public` | Normal operation | 200 |
+| `maintenance` | Shows 503 page to all visitors | 200 (rewrite) |
+| `devmode` | Shows login modal; password unlocks access | 200 (rewrite) |
+| `testing` | Shows login modal; password unlocks access | 200 (rewrite) |
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/app-auth` | `POST` | Authenticate for devmode/testing access. |
+| `/api/kuma/maintenance` | `POST` | Activate maintenance for the current host's monitor. |
+| `/api/kuma/maintenance` | `DELETE` | Deactivate maintenance for the current host's monitor. |
 
 ## Deployment
 
@@ -56,5 +93,10 @@ Pushed automatically to GitHub Container Registry via GitHub Actions.
 docker pull ghcr.io/mleem97/greggorpages:latest
 ```
 
+## Documentation
+
+- [User Manual](docs/USERMANUAL.md) - Complete setup, configuration, and API reference.
+
 ---
+
 Built with precision for the gregFramework ecosystem.

@@ -73,7 +73,11 @@
       "linkToStatusPage": "https://status.example.com",
       "showLink": true,
       "apiKey": "",
-      "monitorId": ""
+      "monitorId": "",
+      "hostMonitors": {
+        "datacentermods.com": "1",
+        "*.example.com": "2"
+      }
     }
   }
 }
