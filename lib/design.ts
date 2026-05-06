@@ -12,6 +12,8 @@ export interface KumaIntegrationConfig {
   statusPageSlug: string;
   linkToStatusPage: string;
   showLink: boolean;
+  apiKey?: string;
+  monitorId?: string | number;
 }
 
 export interface DesignConfig {
@@ -139,6 +141,8 @@ const DEFAULT_CONFIG: DesignConfig = {
       statusPageSlug: "default",
       linkToStatusPage: "https://status.example.com",
       showLink: true,
+      apiKey: "",
+      monitorId: "",
     },
   },
 };

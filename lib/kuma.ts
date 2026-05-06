@@ -83,3 +83,63 @@ export async function fetchKumaStatus(config: {
     };
   }
 }
+
+export async function setKumaMaintenance(config: {
+  enabled: boolean;
+  baseUrl: string;
+  apiKey?: string;
+  monitorId?: string | number;
+}): Promise<boolean> {
+  if (!config.enabled || !config.apiKey || !config.monitorId) return false;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    // Versuche Maintenance-Mode über Kuma Management API zu setzen
+    // Hinweis: Passe diese Endpunkte an deine Kuma-Version an.
+    const res = await fetch(`${config.baseUrl}/api/monitors/${config.monitorId}/pause`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    return res.ok;
+  } catch (e) {
+    console.error("Failed to set Kuma maintenance:", e);
+    return false;
+  }
+}
+
+export async function resolveKumaMaintenance(config: {
+  enabled: boolean;
+  baseUrl: string;
+  apiKey?: string;
+  monitorId?: string | number;
+}): Promise<boolean> {
+  if (!config.enabled || !config.apiKey || !config.monitorId) return false;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch(`${config.baseUrl}/api/monitors/${config.monitorId}/resume`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    return res.ok;
+  } catch (e) {
+    console.error("Failed to resolve Kuma maintenance:", e);
+    return false;
+  }
+}

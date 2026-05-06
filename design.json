@@ -71,7 +71,9 @@
       "baseUrl": "https://status.example.com",
       "statusPageSlug": "default",
       "linkToStatusPage": "https://status.example.com",
-      "showLink": true
+      "showLink": true,
+      "apiKey": "",
+      "monitorId": ""
     }
   }
 }
