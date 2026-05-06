@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateApiKey } from "@/lib/auth";
 import { loadDesignConfig, getMonitorIdForHost } from "@/lib/design";
 import { setKumaMaintenance, resolveKumaMaintenance } from "@/lib/kuma";
 
@@ -9,23 +10,6 @@ export interface GitPushPayload {
   commit?: string;
   monitorId?: string | number;
   message?: string;
-  secret?: string;
-}
-
-function validateSecret(request: NextRequest, body: GitPushPayload): boolean {
-  const expected = process.env.GIT_PUSH_SECRET;
-  if (!expected) {
-    console.error("GIT_PUSH_SECRET not configured");
-    return false;
-  }
-
-  const headerSecret = request.headers.get("x-git-push-secret");
-  if (headerSecret === expected) return true;
-
-  const bodySecret = body.secret;
-  if (bodySecret === expected) return true;
-
-  return false;
 }
 
 async function forwardWebhook(payload: GitPushPayload): Promise<void> {
@@ -44,6 +28,9 @@ async function forwardWebhook(payload: GitPushPayload): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = validateApiKey(request);
+  if (authError) return authError;
+
   const host = request.headers.get("host") || "";
 
   let body: GitPushPayload;
@@ -51,10 +38,6 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  if (!validateSecret(request, body)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const config = loadDesignConfig();

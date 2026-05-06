@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateApiKey } from "@/lib/auth";
 import { loadDesignConfig, getMonitorIdForHost } from "@/lib/design";
 import { setKumaMaintenance, resolveKumaMaintenance } from "@/lib/kuma";
 
 export async function POST(request: NextRequest) {
+  const authError = validateApiKey(request);
+  if (authError) return authError;
+
   const config = loadDesignConfig();
   const kuma = config.integrations.uptimeKuma;
   const host = request.headers.get("host") || "";
@@ -29,6 +33,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const authError = validateApiKey(request);
+  if (authError) return authError;
+
   const config = loadDesignConfig();
   const kuma = config.integrations.uptimeKuma;
   const host = request.headers.get("host") || "";
