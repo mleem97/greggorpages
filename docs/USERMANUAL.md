@@ -364,6 +364,7 @@ Git Push
 Set the following environment variables:
 
 ```env
+API_KEY=your-master-api-key
 GIT_PUSH_SECRET=your-webhook-secret
 WEBHOOK_URL=https://your-other-service.com/webhook  # optional
 ```
@@ -377,6 +378,7 @@ Add this to your repository's GitHub Actions workflow after the image is built:
   run: |
     curl -X POST https://errors.yourdomain.com/api/git-push \
       -H "Content-Type: application/json" \
+      -H "X-API-Key: ${{ secrets.GREGGORPAGES_API_KEY }}" \
       -H "X-Git-Push-Secret: ${{ secrets.GIT_PUSH_SECRET }}" \
       -d '{
         "action": "deploy-start",
@@ -391,6 +393,7 @@ Add this to your repository's GitHub Actions workflow after the image is built:
   run: |
     curl -X POST https://errors.yourdomain.com/api/git-push \
       -H "Content-Type: application/json" \
+      -H "X-API-Key: ${{ secrets.GREGGORPAGES_API_KEY }}" \
       -H "X-Git-Push-Secret: ${{ secrets.GIT_PUSH_SECRET }}" \
       -d '{
         "action": "deploy-complete",
@@ -422,9 +425,20 @@ If `WEBHOOK_URL` is configured, greggorpages will forward the event payload to t
 
 ## API Reference
 
+> **Authentication:** All API endpoints require the `API_KEY` environment variable to be set. Pass the key in every request via:
+> - Header: `X-API-Key: your-api-key`
+> - Query parameter: `?api_key=your-api-key`
+>
+> If `API_KEY` is not configured, all `/api/*` routes return `503 API is disabled`.
+
+---
+
 ### `POST /api/app-auth`
 
 Authenticate for `devmode` or `testing` access.
+
+**Headers:**
+- `X-API-Key` — Required. Master API key.
 
 **Request Body:**
 ```json
@@ -436,14 +450,18 @@ Authenticate for `devmode` or `testing` access.
 
 **Response:**
 - `200 OK` — Sets `app-auth` cookie, reload page to access.
-- `401 Unauthorized` — Wrong password.
+- `401 Unauthorized` — Wrong API key or password.
 - `400 Bad Request` — Missing password or invalid mode.
+- `503 Service Unavailable` — `API_KEY` not configured.
 
 ---
 
 ### `POST /api/kuma/maintenance`
 
 Activate maintenance mode for the current host's monitor.
+
+**Headers:**
+- `X-API-Key` — Required. Master API key.
 
 **Request Body (optional):**
 ```json
@@ -454,7 +472,9 @@ Activate maintenance mode for the current host's monitor.
 
 **Response:**
 - `200 OK` — `{ "ok": true, "monitorId": "..." }`
+- `401 Unauthorized` — Invalid or missing API key.
 - `502 Bad Gateway` — Kuma API call failed.
+- `503 Service Unavailable` — `API_KEY` not configured.
 
 ---
 
@@ -462,12 +482,17 @@ Activate maintenance mode for the current host's monitor.
 
 Deactivate maintenance mode for the current host's monitor.
 
+**Headers:**
+- `X-API-Key` — Required. Master API key.
+
 **Query Parameters (optional):**
 - `monitorId` — Override the resolved monitor.
 
 **Response:**
 - `200 OK` — `{ "ok": true, "monitorId": "..." }`
+- `401 Unauthorized` — Invalid or missing API key.
 - `502 Bad Gateway` — Kuma API call failed.
+- `503 Service Unavailable` — `API_KEY` not configured.
 
 ---
 
@@ -476,7 +501,8 @@ Deactivate maintenance mode for the current host's monitor.
 Deploy webhook endpoint. Receives signals from CI/CD pipelines to toggle maintenance mode automatically.
 
 **Headers:**
-- `X-Git-Push-Secret` — Authentication secret (required if not in body).
+- `X-API-Key` — Required. Master API key.
+- `X-Git-Push-Secret` — Additional webhook secret (required if not in body).
 - `Content-Type: application/json`
 
 **Request Body:**
@@ -498,13 +524,14 @@ Deploy webhook endpoint. Receives signals from CI/CD pipelines to toggle mainten
 | `ref` | No | Git ref (branch/tag). |
 | `commit` | No | Commit SHA. |
 | `monitorId` | No | Override the auto-resolved monitor ID. |
-| `secret` | No | Auth secret (alternative to header). |
+| `secret` | No | Webhook secret (alternative to `X-Git-Push-Secret` header). |
 
 **Response:**
 - `200 OK` — `{ "ok": true, "action": "deploy-start", "monitorId": "..." }`
-- `401 Unauthorized` — Invalid or missing secret.
+- `401 Unauthorized` — Invalid or missing API key / webhook secret.
 - `400 Bad Request` — Invalid action or malformed body.
 - `502 Bad Gateway` — Kuma API call failed.
+- `503 Service Unavailable` — `API_KEY` not configured.
 
 ---
 
@@ -592,7 +619,15 @@ The included Dockerfile already handles this correctly.
 - Ensure the app is in `devmode` or `testing` status.
 - Check browser cookies — if `app-auth` exists, you are already authenticated.
 
+### `/api/*` returns 503 "API is disabled"
+- The `API_KEY` environment variable is not set. All API endpoints are disabled by default until `API_KEY` is configured.
+
+### `/api/*` returns 401
+- Verify the request includes the `X-API-Key` header or `api_key` query parameter.
+- Ensure the value matches the `API_KEY` environment variable exactly.
+
 ### `/api/git-push` returns 401
+- Verify `API_KEY` is set (master key check comes first).
 - Verify `GIT_PUSH_SECRET` is set in the environment.
 - Ensure the request includes `X-Git-Push-Secret` header or `secret` in the JSON body.
 - Check that the values match exactly.
