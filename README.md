@@ -12,6 +12,7 @@ A modern, high-performance, and animated error page service built with **Next.js
 - **Uptime Kuma Integration**: Automatically syncs maintenance status and displays live service health.
 - **Multi-Tenant Proxy**: Host-based monitor mapping for serving multiple domains from one instance.
 - **Fully Themeable**: All colors, fonts, shadows, and text controlled via `design.json`.
+- **Deploy Middleware**: Receive deploy signals via `/api/git-push` and automatically toggle Uptime Kuma maintenance.
 - **Docker Ready**: Optimized standalone multi-stage Dockerfile with GitHub Actions publishing.
 
 ## Quick Start
@@ -61,6 +62,8 @@ npm run build
 | `APP_STATUS_URL` | No | External API returning `public`, `maintenance`, `devmode`, or `testing`. |
 | `DEVMODE_PASSWORD` | No | Password for `devmode` access. |
 | `TESTING_PASSWORD` | No | Password for `testing` access (falls back to `DEVMODE_PASSWORD`). |
+| `GIT_PUSH_SECRET` | No | Secret token for `/api/git-push` webhook authentication. |
+| `WEBHOOK_URL` | No | Optional URL to forward deploy events to. |
 
 ### design.json
 
@@ -84,6 +87,7 @@ See the [User Manual](docs/USERMANUAL.md) for the full configuration reference.
 | `/api/app-auth` | `POST` | Authenticate for devmode/testing access. |
 | `/api/kuma/maintenance` | `POST` | Activate maintenance for the current host's monitor. |
 | `/api/kuma/maintenance` | `DELETE` | Deactivate maintenance for the current host's monitor. |
+| `/api/git-push` | `POST` | Deploy webhook. Start/complete deployments and auto-toggle Kuma maintenance. |
 
 ## Deployment
 

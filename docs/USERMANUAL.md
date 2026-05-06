@@ -14,9 +14,10 @@ Complete documentation for installing, configuring, and operating greggorpages.
 4. [App Status Modes](#app-status-modes)
 5. [Uptime Kuma Integration](#uptime-kuma-integration)
 6. [Multi-Tenant / Proxy Setup](#multi-tenant--proxy-setup)
-7. [API Reference](#api-reference)
-8. [Docker Deployment](#docker-deployment)
-9. [Troubleshooting](#troubleshooting)
+7. [Deploy Middleware](#deploy-middleware)
+8. [API Reference](#api-reference)
+9. [Docker Deployment](#docker-deployment)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -86,6 +87,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `APP_STATUS_URL` | *(none)* | URL to fetch the current app status from. Must return `public`, `maintenance`, `devmode`, or `testing`. |
 | `DEVMODE_PASSWORD` | *(none)* | Password required to unlock the app in `devmode`. |
 | `TESTING_PASSWORD` | *(none)* | Password required to unlock the app in `testing`. Falls back to `DEVMODE_PASSWORD` if unset. |
+| `GIT_PUSH_SECRET` | *(none)* | Secret token for authenticating `/api/git-push` webhook requests. |
+| `WEBHOOK_URL` | *(none)* | Optional URL to forward deploy events to after processing. |
 
 > **Note:** These variables are server-side only and never exposed to the browser.
 
@@ -333,6 +336,89 @@ Resolution order:
 
 ---
 
+## Deploy Middleware
+
+greggorpages can act as a deploy middleware by receiving webhook signals from your CI/CD pipeline (e.g. GitHub Actions). When a deployment starts or completes, your pipeline calls `/api/git-push` and greggorpages automatically toggles Uptime Kuma maintenance mode.
+
+### Deployment Flow
+
+```
+Git Push
+    |
+    v
+[GitHub Actions] ---> Build & Release Docker Image
+                            |
+                            v
+              [Webhook / curl POST] ---> [greggorpages /api/git-push]
+                                                            |
+                                            +---------------+---------------+
+                                            |                               |
+                                    deploy-start                    deploy-complete
+                                            |                               |
+                                    [Kuma Maintenance ON]         [Kuma Maintenance OFF]
+```
+
+### Configuration
+
+Set the following environment variables:
+
+```env
+GIT_PUSH_SECRET=your-webhook-secret
+WEBHOOK_URL=https://your-other-service.com/webhook  # optional
+```
+
+### GitHub Actions Workflow Example
+
+Add this to your repository's GitHub Actions workflow after the image is built:
+
+```yaml
+- name: Notify Deploy Start
+  run: |
+    curl -X POST https://errors.yourdomain.com/api/git-push \
+      -H "Content-Type: application/json" \
+      -H "X-Git-Push-Secret: ${{ secrets.GIT_PUSH_SECRET }}" \
+      -d '{
+        "action": "deploy-start",
+        "repository": "${{ github.repository }}",
+        "ref": "${{ github.ref }}",
+        "commit": "${{ github.sha }}"
+      }'
+
+# ... deploy steps ...
+
+- name: Notify Deploy Complete
+  run: |
+    curl -X POST https://errors.yourdomain.com/api/git-push \
+      -H "Content-Type: application/json" \
+      -H "X-Git-Push-Secret: ${{ secrets.GIT_PUSH_SECRET }}" \
+      -d '{
+        "action": "deploy-complete",
+        "repository": "${{ github.repository }}",
+        "ref": "${{ github.ref }}",
+        "commit": "${{ github.sha }}"
+      }'
+```
+
+### Actions
+
+| Action | Behavior |
+|--------|----------|
+| `deploy-start` | Activates Kuma maintenance for the host's monitor. |
+| `deploy-complete` | Deactivates Kuma maintenance for the host's monitor. |
+| `ping` | Healthcheck. Returns current monitorId and timestamp. |
+
+### Authentication
+
+The webhook must include the secret token in either:
+- Header: `X-Git-Push-Secret: your-secret`
+- Body: `{ "secret": "your-secret" }`
+
+### Forwarding
+
+If `WEBHOOK_URL` is configured, greggorpages will forward the event payload to that URL after processing. This is useful for chaining notifications (e.g. to Discord, Slack, or another monitoring service).
+
+---
+
 ## API Reference
 
 ### `POST /api/app-auth`
@@ -380,6 +466,43 @@ Deactivate maintenance mode for the current host's monitor.
 
 **Response:**
 - `200 OK` — `{ "ok": true, "monitorId": "..." }`
+- `502 Bad Gateway` — Kuma API call failed.
+
+---
+
+### `POST /api/git-push`
+
+Deploy webhook endpoint. Receives signals from CI/CD pipelines to toggle maintenance mode automatically.
+
+**Headers:**
+- `X-Git-Push-Secret` — Authentication secret (required if not in body).
+- `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "action": "deploy-start",
+  "repository": "owner/repo",
+  "ref": "refs/heads/main",
+  "commit": "abc123",
+  "monitorId": "1",
+  "secret": "your-webhook-secret"
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `action` | Yes | `deploy-start`, `deploy-complete`, or `ping`. |
+| `repository` | No | Repository name for logging. |
+| `ref` | No | Git ref (branch/tag). |
+| `commit` | No | Commit SHA. |
+| `monitorId` | No | Override the auto-resolved monitor ID. |
+| `secret` | No | Auth secret (alternative to header). |
+
+**Response:**
+- `200 OK` — `{ "ok": true, "action": "deploy-start", "monitorId": "..." }`
+- `401 Unauthorized` — Invalid or missing secret.
+- `400 Bad Request` — Invalid action or malformed body.
 - `502 Bad Gateway` — Kuma API call failed.
 
 ---
@@ -467,6 +590,17 @@ The included Dockerfile already handles this correctly.
 ### DevMode button not appearing
 - Ensure the app is in `devmode` or `testing` status.
 - Check browser cookies — if `app-auth` exists, you are already authenticated.
+
+### `/api/git-push` returns 401
+- Verify `GIT_PUSH_SECRET` is set in the environment.
+- Ensure the request includes `X-Git-Push-Secret` header or `secret` in the JSON body.
+- Check that the values match exactly.
+
+### Deploy webhook not toggling Kuma
+- Verify Kuma integration is enabled in `design.json` (`integrations.uptimeKuma.enabled: true`).
+- Ensure `apiKey` and `monitorId` (or `hostMonitors`) are configured.
+- Check server logs for Kuma API errors.
+- Confirm the `Host` header in the request matches a configured `hostMonitors` entry.
 
 ---
 
