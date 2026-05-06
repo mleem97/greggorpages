@@ -90,6 +90,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `TESTING_PASSWORD` | *(none)* | Password required to unlock the app in `testing`. Falls back to `DEVMODE_PASSWORD` if unset. |
 | `GIT_PUSH_SECRET` | *(none)* | Additional secret for authenticating `/api/git-push` webhook requests (checked after `API_KEY`). |
 | `WEBHOOK_URL` | *(none)* | Optional URL to forward deploy events to after processing. |
+| `DEPLOY_BASE_PATH` | `/opt/docker-infra` | Base directory for self-update deploy paths. All `X-Deploy-Path` headers must resolve inside this directory. |
+| `ALLOWED_DEPLOY_PATHS` | *(none)* | Optional comma-separated whitelist of allowed deploy paths (e.g. `/opt/docker-infra/proxy-and-security/errorpages,/opt/docker-infra/modstore`). |
 
 > **Note:** These variables are server-side only and never exposed to the browser.
 
@@ -423,6 +425,90 @@ If `WEBHOOK_URL` is configured, greggorpages will forward the event payload to t
 
 ---
 
+## Self-Update (Remote Container Deployment)
+
+greggorpages can remotely update Docker Compose stacks via the `/api/self-update` endpoint. This is useful when you have a central orchestration server and want to trigger updates from GitHub Actions after a new image is pushed.
+
+### Update Strategies
+
+| Strategy | When to use | Kuma Maintenance |
+|----------|-------------|------------------|
+| **Rolling Update** (default) | Stateless services, zero-downtime desired | Not used |
+| **Maintenance + Update** | Stateful services, avoid half-finished requests | Activated before update, resolved after |
+
+For **greggorpages** itself, **Rolling Update** is usually sufficient because it is completely stateless. Docker Compose starts the new container before stopping the old one.
+
+### How it works
+
+```
+GitHub Actions Build & Push
+        |
+        v
+[POST /api/self-update] ---> [greggorpages on Orchestrator Server]
+                                        |
+                    +-------------------+-------------------+
+                    |                                       |
+        X-Maintenance-Mode: true          X-Maintenance-Mode: false (default)
+                    |                                       |
+            [Kuma Blau ON]                            [Skip Maintenance]
+                    |                                       |
+            [docker compose pull]                     [docker compose pull]
+            [docker compose up -d]                    [docker compose up -d]
+                    |                                       |
+            [Kuma Blau OFF]                             [Done]
+```
+
+### Requirements
+
+The greggorpages container must have access to the Docker socket:
+
+```yaml
+services:
+  error-pages:
+    image: ghcr.io/mleem97/greggorpages:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/docker-infra:/opt/docker-infra:ro
+    environment:
+      - API_KEY=your-master-api-key
+      - DEPLOY_BASE_PATH=/opt/docker-infra
+      - ALLOWED_DEPLOY_PATHS=/opt/docker-infra/proxy-and-security/errorpages,/opt/docker-infra/modstore
+```
+
+### GitHub Actions Integration
+
+The included workflow `.github/workflows/docker-publish.yml` already supports self-updates. Set these repository secrets:
+
+| Secret | Description |
+|--------|-------------|
+| `SELF_UPDATE_URL` | Full URL to `/api/self-update` on your orchestrator server. |
+| `GREGGORPAGES_API_KEY` | Master API key. |
+| `SELF_UPDATE_DEPLOY_PATH` | Target directory on the server, e.g. `/opt/docker-infra/proxy-and-security/errorpages`. |
+| `SELF_UPDATE_MAINTENANCE_MODE` | Set to `true` to enable Kuma maintenance during the update. |
+
+### Manual Trigger
+
+```bash
+# Rolling Update (default)
+curl -X POST https://orchestrator.yourdomain.com/api/self-update \
+  -H "X-API-Key: your-master-api-key" \
+  -H "X-Deploy-Path: /opt/docker-infra/proxy-and-security/errorpages"
+
+# With Maintenance Mode
+curl -X POST https://orchestrator.yourdomain.com/api/self-update \
+  -H "X-API-Key: your-master-api-key" \
+  -H "X-Deploy-Path: /opt/docker-infra/proxy-and-security/errorpages" \
+  -H "X-Maintenance-Mode: true"
+```
+
+### Security
+
+- `X-Deploy-Path` must resolve inside `DEPLOY_BASE_PATH` (path traversal protection).
+- If `ALLOWED_DEPLOY_PATHS` is set, the path must match one of the whitelisted prefixes.
+- Both checks use absolute path resolution to prevent bypasses like `../../../etc`.
+
+---
+
 ## API Reference
 
 > **Authentication:** All API endpoints require the `API_KEY` environment variable to be set. Pass the key in every request via:
@@ -535,6 +621,26 @@ Deploy webhook endpoint. Receives signals from CI/CD pipelines to toggle mainten
 
 ---
 
+### `POST /api/self-update`
+
+Trigger a remote Docker Compose update on the server running greggorpages.
+
+**Headers:**
+- `X-API-Key` — Required. Master API key.
+- `X-Deploy-Path` — Required. Absolute path to the compose directory on the server.
+- `X-Maintenance-Mode` — Optional. Set to `true` to activate Kuma maintenance during the update.
+
+**Response:**
+- `200 OK` — `{ "ok": true, "path": "/opt/...", "maintenanceMode": true, "kumaToggled": true, "output": "..." }`
+- `400 Bad Request` — Missing `X-Deploy-Path` header.
+- `401 Unauthorized` — Invalid or missing API key.
+- `403 Forbidden` — Deploy path is outside `DEPLOY_BASE_PATH` or not in `ALLOWED_DEPLOY_PATHS`.
+- `404 Not Found` — Deploy path does not exist on the server.
+- `500 Internal Server Error` — Docker command failed.
+- `503 Service Unavailable` — `API_KEY` not configured.
+
+---
+
 ## Docker Deployment
 
 ### Standalone
@@ -560,6 +666,11 @@ services:
     environment:
       - APP_STATUS_URL=https://datacentermods.com/api/status
       - DEVMODE_PASSWORD=${DEVMODE_PASSWORD}
+      - API_KEY=${API_KEY}
+      - DEPLOY_BASE_PATH=/opt/docker-infra
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /opt/docker-infra:/opt/docker-infra:ro
     networks:
       - traefik-public
     labels:
@@ -637,6 +748,18 @@ The included Dockerfile already handles this correctly.
 - Ensure `apiKey` and `monitorId` (or `hostMonitors`) are configured.
 - Check server logs for Kuma API errors.
 - Confirm the `Host` header in the request matches a configured `hostMonitors` entry.
+
+### `/api/self-update` returns 500
+- Verify the container has access to the Docker socket (`/var/run/docker.sock` mounted).
+- Ensure the deploy path exists on the host filesystem.
+- Check that `DEPLOY_BASE_PATH` is set correctly.
+- If using `ALLOWED_DEPLOY_PATHS`, verify the requested path matches one of the whitelisted prefixes.
+- Check server logs for the exact Docker command error.
+
+### `/api/self-update` returns 403
+- The requested `X-Deploy-Path` is outside `DEPLOY_BASE_PATH`.
+- Or the path is not in the `ALLOWED_DEPLOY_PATHS` whitelist.
+- Both checks use absolute path resolution — relative paths like `./stack` are resolved first.
 
 ---
 

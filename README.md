@@ -13,6 +13,7 @@ A modern, high-performance, and animated error page service built with **Next.js
 - **Multi-Tenant Proxy**: Host-based monitor mapping for serving multiple domains from one instance.
 - **Fully Themeable**: All colors, fonts, shadows, and text controlled via `design.json`.
 - **Deploy Middleware**: Receive deploy signals via `/api/git-push` and automatically toggle Uptime Kuma maintenance.
+- **Self-Updating Container**: Trigger `docker compose pull && up -d` remotely via `/api/self-update` with automatic maintenance mode support.
 - **Docker Ready**: Optimized standalone multi-stage Dockerfile with GitHub Actions publishing.
 
 ## Quick Start
@@ -65,6 +66,8 @@ npm run build
 | `TESTING_PASSWORD` | No | Password for `testing` access (falls back to `DEVMODE_PASSWORD`). |
 | `GIT_PUSH_SECRET` | No | Additional secret for `/api/git-push` webhook authentication. |
 | `WEBHOOK_URL` | No | Optional URL to forward deploy events to. |
+| `DEPLOY_BASE_PATH` | No | Base directory for self-update deploy paths (default: `/opt/docker-infra`). |
+| `ALLOWED_DEPLOY_PATHS` | No | Comma-separated whitelist of allowed deploy paths for self-update. |
 
 ### design.json
 
@@ -91,6 +94,7 @@ See the [User Manual](docs/USERMANUAL.md) for the full configuration reference.
 | `/api/kuma/maintenance` | `POST` | Activate maintenance for the current host's monitor. |
 | `/api/kuma/maintenance` | `DELETE` | Deactivate maintenance for the current host's monitor. |
 | `/api/git-push` | `POST` | Deploy webhook. Start/complete deployments and auto-toggle Kuma maintenance. |
+| `/api/self-update` | `POST` | Trigger `docker compose pull && up -d` on a remote deploy path with optional Kuma maintenance mode. |
 
 ## Deployment
 

@@ -71,3 +71,22 @@ jobs:
           outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Greggorpages Next.js application
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Trigger Self-Update on Server
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SELF_UPDATE_URL: ${{ secrets.SELF_UPDATE_URL }}
+          API_KEY: ${{ secrets.GREGGORPAGES_API_KEY }}
+          DEPLOY_PATH: ${{ secrets.SELF_UPDATE_DEPLOY_PATH }}
+          MAINTENANCE_MODE: ${{ secrets.SELF_UPDATE_MAINTENANCE_MODE || 'false' }}
+        run: |
+          if [ -n "$SELF_UPDATE_URL" ] && [ -n "$API_KEY" ] && [ -n "$DEPLOY_PATH" ]; then
+            echo "Triggering self-update at $SELF_UPDATE_URL with path $DEPLOY_PATH"
+            curl -X POST "$SELF_UPDATE_URL" \
+              -H "Content-Type: application/json" \
+              -H "X-API-Key: $API_KEY" \
+              -H "X-Deploy-Path: $DEPLOY_PATH" \
+              -H "X-Maintenance-Mode: $MAINTENANCE_MODE"
+          else
+            echo "Self-update not configured. Set SELF_UPDATE_URL, GREGGORPAGES_API_KEY and SELF_UPDATE_DEPLOY_PATH secrets to enable."
+          fi

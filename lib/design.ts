@@ -171,7 +171,7 @@ function toKebabCase(str: string): string {
 }
 
 export function loadDesignConfig(): DesignConfig {
-  const configPath = join(process.cwd(), "design.json");
+  const configPath = join(/*turbopackIgnore: true*/ process.cwd(), "design.json");
   if (existsSync(configPath)) {
     try {
       const raw = readFileSync(configPath, "utf-8");
