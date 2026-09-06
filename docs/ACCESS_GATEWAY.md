@@ -128,15 +128,28 @@ services:
       - "traefik.http.middlewares.peer-forward-auth.forwardauth.address=http://greggorpages:3000/api/access/verify"
       - "traefik.http.middlewares.peer-forward-auth.forwardauth.authRequestHeaders=Cookie,Authorization,Accept,User-Agent,Sec-Fetch-Mode"
       - "traefik.http.middlewares.peer-forward-auth.forwardauth.authResponseHeaders=X-Auth-Authenticated,X-Auth-User,X-Auth-Subject,X-Auth-Email,X-Auth-Name,X-Auth-Roles"
+      - "traefik.http.middlewares.peer-forward-auth.forwardauth.preserveLocationHeader=true"
+      - "traefik.http.middlewares.peer-forward-auth.forwardauth.trustForwardHeader=false"
+      # Traefik >= 3.6.9: recommended DoS guard for the tiny auth response.
+      - "traefik.http.middlewares.peer-forward-auth.forwardauth.maxResponseBodySize=65536"
 
 networks:
   traefik-public:
     external: true
 ```
 
-Do not enable `forwardauth.trustForwardHeader`; current Traefik versions create
-the required `X-Forwarded-*` metadata for ForwardAuth themselves, and the option
-is deprecated.
+Traefik always supplies the original method, protocol, host, URI and source IP
+to the ForwardAuth target as `X-Forwarded-*` metadata. `preserveLocationHeader`
+is enabled so the gateway's absolute redirect to the public login URL is
+forwarded unchanged.
+
+`trustForwardHeader` is explicitly `false` in the example because Traefik is
+assumed to be the Internet-facing entry point. Current Traefik versions warn if
+this setting is omitted. If another trusted proxy/CDN is in front of Traefik and
+its forwarded headers must be honored, configure that proxy's IP ranges under
+the Traefik entry point's `forwardedHeaders.trustedIPs` and then set the
+ForwardAuth middleware's `trustForwardHeader=true`. Do not enable it without a
+trusted-header boundary.
 
 ## Use the protected application's auth system
 
