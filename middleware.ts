@@ -12,8 +12,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const accessLoginPath = process.env.ACCESS_LOGIN_PATH?.trim() || "/access/login";
+  const isAccessGatewayRoute =
+    pathname.startsWith("/api/access/") ||
+    pathname === accessLoginPath ||
+    pathname.startsWith(`${accessLoginPath}/`);
+
   if (
     pathname === "/api/app-auth" ||
+    isAccessGatewayRoute ||
     pathname === "/maintenance" ||
     pathname === "/locked"
   ) {
